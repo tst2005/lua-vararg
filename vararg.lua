@@ -1,6 +1,13 @@
 local select = assert(select)
+
 local table_unpack = assert(table.unpack or _G.unpack)
 
+local table_pack = table.pack
+if table_pack == nil or table_pack(nil, nil).n ~= 2 then
+	function table_pack(...)
+		return {n=select("#", ...), ...}
+	end
+end
 
 local function va_next(va, i)
 	if i == nil then
@@ -17,6 +24,10 @@ local function va_ipairs(t, i)
 	return va_next, t, i
 end
 
+local function va_unpack(self, i, j)
+	return table_unpack(self, i or 1, j or self.n)
+end
+
 local vararg_mt = {}
 
 vararg_mt.__len = function(self)
@@ -24,14 +35,13 @@ vararg_mt.__len = function(self)
 end
 vararg_mt.__ipairs = va_ipairs
 
+vararg_mt.__index = {
+	unpack = assert(va_unpack),
+}
 local function va_pack(...)
-	return setmetatable({unpack=va_unpack, n=select("#", ...), ...}, vararg_mt)
+	return setmetatable({n=select("#", ...), ...}, vararg_mt)
 end
 
-local function va_unpack(self, i, j)
-	--assert(type(x)=="table")
-	return table_unpack(self, i or 1, j or self.n)
-end
 
 local function va_type(x)
 	local x_mt = getmetatable(x)
